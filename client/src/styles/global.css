@@ -68,6 +68,10 @@ body,
   margin: 0;
 }
 
+html {
+  font-size: 14px;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -615,6 +619,23 @@ button {
   padding: 20px;
 }
 
+.formatting-card {
+  margin-top: 34px;
+  padding: 24px;
+}
+
+.formatting-card h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.formatting-card p {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
 .feature-card h3,
 .workspace-card h2,
 .stack-card h2,
@@ -650,6 +671,29 @@ button {
 .feature-list li::before {
   content: "•";
   margin-right: 8px;
+  color: var(--primary);
+}
+
+.formatting-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.format-chip {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.format-chip .feature-icon {
   color: var(--primary);
 }
 
@@ -1182,6 +1226,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .formatting-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .preview-sidebar {
     border-left: 0;
     border-top: 1px solid var(--border);
@@ -1243,6 +1291,10 @@ button {
 
   .preview-users {
     display: none;
+  }
+
+  .formatting-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .toolbar-separator {

@@ -5,6 +5,7 @@ import {
   Cloud,
   Download,
   FileText,
+  Heading1,
   Italic,
   List,
   ListOrdered,
@@ -91,12 +92,12 @@ const featureGroups = [
   {
     title: "Downloads",
     icon: Download,
-    items: ["Export as .txt", "Export as .docx", "Export as .pdf"]
+    items: ["Export as .txt", "Export as .html"]
   }
 ];
 
 const formatting = [
-  { icon: Type, label: "Headings" },
+  { icon: Heading1, label: "Headings" },
   { icon: Bold, label: "Bold" },
   { icon: Italic, label: "Italic" },
   { icon: Underline, label: "Underline" },
