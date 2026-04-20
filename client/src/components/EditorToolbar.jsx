@@ -1,21 +1,30 @@
-const fonts = [
-  { label: "Arial", value: "Arial" },
-  { label: "Georgia", value: "Georgia" },
-  { label: "Times New Roman", value: "Times New Roman" },
-  { label: "Verdana", value: "Verdana" },
-  { label: "Courier New", value: "Courier New" }
-];
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Heading1,
+  Heading2,
+  Heading3,
+  Italic,
+  List,
+  ListOrdered,
+  Strikethrough,
+  Underline
+} from "lucide-react";
 
-const blockOptions = [
-  { label: "Paragraph", value: "paragraph" },
-  { label: "Heading 1", value: "h1" },
-  { label: "Heading 2", value: "h2" }
+const fonts = [
+  { label: "Inter", value: "Inter, system-ui, sans-serif" },
+  { label: "Georgia", value: "Georgia, serif" },
+  { label: "Menlo", value: "Menlo, monospace" },
+  { label: "Times", value: '"Times New Roman", serif' },
+  { label: "Arial", value: "Arial, sans-serif" }
 ];
 
 function ToolbarButton({ active, title, onClick, children }) {
   return (
     <button
-      className={`toolbar-button${active ? " active" : ""}`}
+      className={`toolbar-action${active ? " active" : ""}`}
       type="button"
       title={title}
       onClick={onClick}
@@ -30,38 +39,12 @@ export function EditorToolbar({ editor }) {
     return null;
   }
 
-  const currentFont = editor.getAttributes("textStyle").fontFamily || "Arial";
-  const currentBlock = editor.isActive("heading", { level: 1 })
-    ? "h1"
-    : editor.isActive("heading", { level: 2 })
-      ? "h2"
-      : "paragraph";
+  const currentFont =
+    editor.getAttributes("textStyle").fontFamily || fonts[0].value;
 
   return (
     <div className="toolbar-shell">
-      <div className="toolbar">
-        <select
-          className="toolbar-select"
-          value={currentBlock}
-          onChange={(event) => {
-            const value = event.target.value;
-            const chain = editor.chain().focus();
-
-            if (value === "paragraph") {
-              chain.setParagraph().run();
-              return;
-            }
-
-            chain.toggleHeading({ level: value === "h1" ? 1 : 2 }).run();
-          }}
-        >
-          {blockOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-
+      <div className="toolbar toolbar-rich">
         <select
           className="toolbar-select"
           value={currentFont}
@@ -76,90 +59,100 @@ export function EditorToolbar({ editor }) {
           ))}
         </select>
 
-        <div className="toolbar-divider" />
+        <div className="toolbar-separator" />
+
+        <ToolbarButton
+          active={editor.isActive("heading", { level: 1 })}
+          title="Heading 1"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        >
+          <Heading1 className="toolbar-icon" />
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive("heading", { level: 2 })}
+          title="Heading 2"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        >
+          <Heading2 className="toolbar-icon" />
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive("heading", { level: 3 })}
+          title="Heading 3"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        >
+          <Heading3 className="toolbar-icon" />
+        </ToolbarButton>
+
+        <div className="toolbar-separator" />
 
         <ToolbarButton
           active={editor.isActive("bold")}
           title="Bold"
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
-          <strong>B</strong>
+          <Bold className="toolbar-icon" />
         </ToolbarButton>
-
         <ToolbarButton
           active={editor.isActive("italic")}
           title="Italic"
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
-          <em>I</em>
+          <Italic className="toolbar-icon" />
         </ToolbarButton>
-
         <ToolbarButton
           active={editor.isActive("underline")}
           title="Underline"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
-          <span className="underline">U</span>
+          <Underline className="toolbar-icon" />
         </ToolbarButton>
-
         <ToolbarButton
           active={editor.isActive("strike")}
           title="Strikethrough"
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
-          <span className="strike">S</span>
+          <Strikethrough className="toolbar-icon" />
         </ToolbarButton>
 
-        <div className="toolbar-divider" />
+        <div className="toolbar-separator" />
 
         <ToolbarButton
           active={editor.isActive({ textAlign: "left" })}
           title="Align left"
           onClick={() => editor.chain().focus().setTextAlign("left").run()}
         >
-          Left
+          <AlignLeft className="toolbar-icon" />
         </ToolbarButton>
-
         <ToolbarButton
           active={editor.isActive({ textAlign: "center" })}
           title="Align center"
           onClick={() => editor.chain().focus().setTextAlign("center").run()}
         >
-          Center
+          <AlignCenter className="toolbar-icon" />
         </ToolbarButton>
-
         <ToolbarButton
           active={editor.isActive({ textAlign: "right" })}
           title="Align right"
           onClick={() => editor.chain().focus().setTextAlign("right").run()}
         >
-          Right
+          <AlignRight className="toolbar-icon" />
         </ToolbarButton>
 
-        <div className="toolbar-divider" />
+        <div className="toolbar-separator" />
 
         <ToolbarButton
           active={editor.isActive("bulletList")}
-          title="Bulleted list"
+          title="Bullet list"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         >
-          Bullets
+          <List className="toolbar-icon" />
         </ToolbarButton>
-
         <ToolbarButton
           active={editor.isActive("orderedList")}
           title="Numbered list"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         >
-          Numbering
-        </ToolbarButton>
-
-        <ToolbarButton
-          active={false}
-          title="Clear formatting"
-          onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
-        >
-          Clear
+          <ListOrdered className="toolbar-icon" />
         </ToolbarButton>
       </div>
     </div>

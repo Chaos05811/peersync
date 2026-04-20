@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { updateProfile } from "firebase/auth";
+import {
+  Check,
+  Copy,
+  Download,
+  Users,
+  Waypoints,
+  Wifi,
+  WifiOff
+} from "lucide-react";
 
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
@@ -16,6 +25,7 @@ import * as Y from "yjs";
 
 import { AuthPanel } from "../components/AuthPanel";
 import { EditorToolbar } from "../components/EditorToolbar";
+import { downloadDocx, downloadPdf, downloadTxt } from "../lib/exporters";
 import {
   buildPresenceProfile,
   createRoomCode,
@@ -39,20 +49,6 @@ function getWebsocketBaseUrl() {
   return `${protocol}://${window.location.host}/collaboration`;
 }
 
-function sanitizeFileName(value) {
-  return value.trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-") || "document";
-}
-
-function downloadFile(filename, content, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
 function getInitials(name) {
   return name
     .split(" ")
@@ -60,6 +56,91 @@ function getInitials(name) {
     .map((part) => part[0] || "")
     .join("")
     .toUpperCase();
+}
+
+function PresenceBadges({ users }) {
+  return (
+    <div className="presence-badges">
+      {users.slice(0, 4).map((user) => (
+        <span
+          className="presence-badge"
+          key={`${user.name}-${user.color}`}
+          style={{ backgroundColor: user.color }}
+          title={user.name}
+        >
+          {getInitials(user.name)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function WorkspaceLauncher({ roomInput, setRoomInput }) {
+  return (
+    <div className="workspace-page">
+      <header className="site-header">
+        <div className="site-header-inner">
+          <a className="site-brand" href="/ARCHITECTURE.html">
+            <span className="site-brand-mark">
+              <Waypoints className="site-brand-icon" />
+            </span>
+            <span>PeerSync</span>
+          </a>
+          <div className="site-header-actions">
+            <a className="ghost-button" href="/ARCHITECTURE.html">
+              Home
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main className="workspace-center">
+        <div className="section-heading center">
+          <h1>Your workspace</h1>
+          <p>Start a fresh document or hop into an existing room with its code.</p>
+        </div>
+
+        <div className="workspace-split">
+          <section className="panel-card">
+            <span className="panel-icon">
+              <Waypoints className="panel-icon-svg" />
+            </span>
+            <h2>Create a new room</h2>
+            <p>Generate a fresh room code and jump straight into the editor.</p>
+            <button className="gradient-button full-width" type="button" onClick={() => openRoom(createRoomCode())}>
+              Create room
+            </button>
+          </section>
+
+          <section className="panel-card">
+            <span className="panel-icon muted">
+              <Users className="panel-icon-svg" />
+            </span>
+            <h2>Join with a code</h2>
+            <p>Got a room code from a teammate? Drop it in.</p>
+            <div className="portal-field">
+              <span>Room code</span>
+              <input
+                className="portal-input standalone mono"
+                value={roomInput}
+                onChange={(event) => setRoomInput(event.target.value.toUpperCase())}
+                placeholder="ABCD1234"
+                maxLength={12}
+              />
+            </div>
+            <button
+              className="ghost-button full-width"
+              type="button"
+              disabled={!roomInput.trim()}
+              onClick={() => openRoom(roomInput)}
+            >
+              Join room
+            </button>
+          </section>
+        </div>
+      </main>
+    </div>
+  );
 }
 
 function CollaborativeRoom({
@@ -75,12 +156,14 @@ function CollaborativeRoom({
   profileSaving,
   handleProfileSave
 }) {
+  const [copied, setCopied] = useState(null);
+
   const editor = useEditor(
     {
       immediatelyRender: false,
       editorProps: {
         attributes: {
-          class: "doc-editor"
+          class: "doc-editor ps-prose"
         }
       },
       extensions: [
@@ -117,12 +200,16 @@ function CollaborativeRoom({
 
   if (!editor) {
     return (
-      <div className="workspace-launch">
-        <div className="workspace-launch-card">
-          <div className="brand-mark">PS</div>
-          <h2>Joining room {roomId}</h2>
-          <p className="muted-copy">Preparing the collaborative editor.</p>
-        </div>
+      <div className="workspace-page">
+        <main className="workspace-center">
+          <div className="panel-card compact-card">
+            <span className="site-brand-mark">
+              <Waypoints className="site-brand-icon" />
+            </span>
+            <h2>Joining room {roomId}</h2>
+            <p>Preparing the collaborative editor.</p>
+          </div>
+        </main>
       </div>
     );
   }
@@ -131,115 +218,131 @@ function CollaborativeRoom({
     ? editor.getText().trim().split(/\s+/).length
     : 0;
   const charCount = editor.getText().length;
-  const fileName = sanitizeFileName(title || roomId);
   const roomLink = getCleanRoomPath(roomId);
 
+  async function copyValue(value, kind) {
+    await navigator.clipboard.writeText(value);
+    setCopied(kind);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
   return (
-    <div className="editor-page">
-      <header className="workspace-header">
-        <div className="workspace-header-main">
-          <a className="brand-row plain-link" href="/ARCHITECTURE.html">
-            <div className="brand-mark">PS</div>
-            <span className="brand-name">PeerSync</span>
-          </a>
-
-          <div className="doc-header-copy">
-            <input
-              className="doc-title-input"
-              value={title}
-              onChange={(event) => {
-                collab.ydoc.transact(() => {
-                  collab.titleText.delete(0, collab.titleText.length);
-                  if (event.target.value) {
-                    collab.titleText.insert(0, event.target.value);
-                  }
-                });
-              }}
-              placeholder="Untitled Document"
-            />
-
-            <div className="doc-meta-row">
-              <span>Room code: {roomId}</span>
-              <span className={`status-pill ${connectionStatus}`}>
-                {connectionStatus === "connected" ? "Connected" : "Connecting"}
+    <div className="room-page">
+      <header className="room-header">
+        <div className="room-header-inner">
+          <div className="room-brand-block">
+            <a className="site-brand" href="/ARCHITECTURE.html">
+              <span className="site-brand-mark">
+                <Waypoints className="site-brand-icon" />
               </span>
-              <span>{users.length} collaborator(s)</span>
+              <span>PeerSync</span>
+            </a>
+
+            <div className="room-meta">
+              <span className="room-code-pill">{roomId}</span>
+              <span className={`room-status ${connectionStatus}`}>
+                {connectionStatus === "connected" ? (
+                  <Wifi className="status-icon" />
+                ) : (
+                  <WifiOff className="status-icon" />
+                )}
+                {connectionStatus === "connected" ? "Live" : "Connecting"}
+              </span>
             </div>
           </div>
-        </div>
 
-        <div className="workspace-header-actions">
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={async () => {
-              await navigator.clipboard.writeText(roomLink);
-            }}
-          >
-            Copy Room Link
-          </button>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() =>
-              downloadFile(`${fileName}.txt`, editor.getText(), "text/plain")
-            }
-          >
-            Download TXT
-          </button>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() =>
-              downloadFile(
-                `${fileName}.html`,
-                `<!doctype html><html><head><meta charset="UTF-8"><title>${title || "Untitled Document"}</title></head><body>${editor.getHTML()}</body></html>`,
-                "text/html"
-              )
-            }
-          >
-            Download HTML
-          </button>
+          <div className="room-actions">
+            <PresenceBadges users={users} />
+            <button className="ghost-button" type="button" onClick={() => copyValue(roomLink, "link")}>
+              {copied === "link" ? <Check className="inline-icon" /> : <Copy className="inline-icon" />}
+              Copy link
+            </button>
+            <button className="ghost-button" type="button" onClick={() => copyValue(roomId, "code")}>
+              {copied === "code" ? <Check className="inline-icon" /> : <Copy className="inline-icon" />}
+              Copy code
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => downloadTxt({ editor, title, fallbackName: roomId })}
+            >
+              <Download className="inline-icon" /> TXT
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => downloadDocx({ editor, title, fallbackName: roomId })}
+            >
+              <Download className="inline-icon" /> DOCX
+            </button>
+            <button
+              className="gradient-button"
+              type="button"
+              onClick={() => downloadPdf({ editor, title, fallbackName: roomId })}
+            >
+              <Download className="inline-icon" /> PDF
+            </button>
+          </div>
         </div>
       </header>
 
       <EditorToolbar editor={editor} />
 
-      <div className="workspace-grid">
-        <aside className="workspace-sidebar">
-          <section className="sidebar-card">
-            <div className="section-kicker">Your Account</div>
-            <label className="field">
+      <main className="room-content">
+        <section className="room-editor-panel">
+          <input
+            className="room-title-input"
+            value={title}
+            onChange={(event) => {
+              collab.ydoc.transact(() => {
+                collab.titleText.delete(0, collab.titleText.length);
+                if (event.target.value) {
+                  collab.titleText.insert(0, event.target.value);
+                }
+              });
+            }}
+            placeholder="Untitled Document"
+          />
+          <div className="room-editor-surface">
+            <EditorContent editor={editor} />
+          </div>
+        </section>
+
+        <aside className="room-side-panel">
+          <section className="panel-card">
+            <h3>Account</h3>
+            <p className="panel-copy">Update the username shown to collaborators.</p>
+            <label className="portal-field">
               <span>Username</span>
               <input
-                className="text-input"
+                className="portal-input standalone"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
               />
             </label>
             <button
-              className="secondary-button full-width"
+              className="ghost-button full-width"
               type="button"
               disabled={profileSaving || !displayName.trim()}
               onClick={handleProfileSave}
             >
-              {profileSaving ? "Saving..." : "Update Username"}
+              {profileSaving ? "Saving..." : "Update username"}
             </button>
-            <p className="helper-copy">{authUser.email}</p>
+            <p className="panel-copy">{authUser.email}</p>
           </section>
 
-          <section className="sidebar-card">
-            <div className="section-kicker">Collaborators</div>
-            <div className="presence-list">
+          <section className="panel-card">
+            <h3>Collaborators</h3>
+            <div className="collaborator-list">
               {users.map((user) => (
-                <div className="presence-user" key={`${user.name}-${user.color}`}>
+                <div className="collaborator-row" key={`${user.name}-${user.color}`}>
                   <span
-                    className="presence-avatar"
+                    className="presence-badge"
                     style={{ backgroundColor: user.color }}
                   >
                     {getInitials(user.name)}
                   </span>
-                  <div className="presence-copy">
+                  <div className="collaborator-copy">
                     <strong>{user.name}</strong>
                     <span>{user.name === presenceUser.name ? "You" : "Live in room"}</span>
                   </div>
@@ -248,27 +351,21 @@ function CollaborativeRoom({
             </div>
           </section>
 
-          <section className="sidebar-card">
-            <div className="section-kicker">Document Stats</div>
-            <div className="stats-list">
-              <div className="stat-row">
+          <section className="panel-card">
+            <h3>Document stats</h3>
+            <div className="stats-grid">
+              <div className="stat-item">
                 <span>Words</span>
                 <strong>{wordCount}</strong>
               </div>
-              <div className="stat-row">
+              <div className="stat-item">
                 <span>Characters</span>
                 <strong>{charCount}</strong>
               </div>
             </div>
           </section>
         </aside>
-
-        <main className="document-stage">
-          <div className="document-paper">
-            <EditorContent editor={editor} />
-          </div>
-        </main>
-      </div>
+      </main>
     </div>
   );
 }
@@ -361,57 +458,21 @@ function Workspace({ authUser }) {
   }
 
   if (!roomId) {
-    return (
-      <div className="workspace-launch">
-        <div className="workspace-launch-card">
-          <div className="brand-row">
-            <div className="brand-mark">PS</div>
-            <span className="brand-name">PeerSync Workspace</span>
-          </div>
-          <h2>Open a room to start editing</h2>
-          <p className="muted-copy">
-            Create a fresh room or join an existing one using the shared room code.
-          </p>
-
-          <div className="field-group">
-            <label className="field-label" htmlFor="room-launch-input">
-              Room code
-            </label>
-            <input
-              id="room-launch-input"
-              className="text-input"
-              value={roomInput}
-              onChange={(event) => setRoomInput(event.target.value.toUpperCase())}
-              placeholder={`Example: ${createRoomCode()}`}
-            />
-          </div>
-
-          <div className="launch-actions">
-            <button className="primary-button" type="button" onClick={() => openRoom(createRoomCode())}>
-              Create Room
-            </button>
-            <button
-              className="secondary-button"
-              type="button"
-              disabled={!roomInput.trim()}
-              onClick={() => openRoom(roomInput)}
-            >
-              Join Room
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <WorkspaceLauncher roomInput={roomInput} setRoomInput={setRoomInput} />;
   }
 
   if (!collab) {
     return (
-      <div className="workspace-launch">
-        <div className="workspace-launch-card">
-          <div className="brand-mark">PS</div>
-          <h2>Joining room {roomId}</h2>
-          <p className="muted-copy">Preparing the collaborative editor.</p>
-        </div>
+      <div className="workspace-page">
+        <main className="workspace-center">
+          <div className="panel-card compact-card">
+            <span className="site-brand-mark">
+              <Waypoints className="site-brand-icon" />
+            </span>
+            <h2>Joining room {roomId}</h2>
+            <p>Preparing the collaborative editor.</p>
+          </div>
+        </main>
       </div>
     );
   }
@@ -438,13 +499,14 @@ export function EditorPage() {
 
   if (!authReady || !authUser) {
     return (
-      <div className="workspace-launch">
-        <div className="workspace-auth-wrap">
+      <div className="login-page">
+        <div className="login-backdrop" />
+        <div className="login-shell">
           <AuthPanel
             authReady={authReady}
             authUser={authUser}
-            title="Sign in before opening the editor"
-            subtitle="Room access is tied to Firebase Authentication so each collaborator has a username."
+            title="Sign in to continue collaborating"
+            subtitle="Use the current Firebase Authentication setup, then open or join a room."
             onAuthenticated={() => {
               window.location.reload();
             }}

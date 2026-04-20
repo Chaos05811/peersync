@@ -5,6 +5,7 @@ import {
   signOut,
   updateProfile
 } from "firebase/auth";
+import { Lock, Mail, User, Waypoints } from "lucide-react";
 
 import { auth } from "../lib/firebase";
 
@@ -22,6 +23,33 @@ function getFriendlyError(error) {
   };
 
   return messages[error.code] || "Authentication failed. Please try again.";
+}
+
+function Field({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required = false
+}) {
+  return (
+    <label className="portal-field">
+      <span>{label}</span>
+      <div className="portal-input-wrap">
+        <Icon className="portal-input-icon" />
+        <input
+          className="portal-input"
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          required={required}
+        />
+      </div>
+    </label>
+  );
 }
 
 export function AuthPanel({
@@ -85,9 +113,14 @@ export function AuthPanel({
   if (!authReady) {
     return (
       <section className={`auth-card${compact ? " compact" : ""}`}>
-        <div className="section-kicker">Authentication</div>
-        <h3>Checking your session</h3>
-        <p className="muted-copy">Connecting to Firebase Authentication.</p>
+        <div className="portal-brand">
+          <span className="portal-brand-mark">
+            <Waypoints className="portal-brand-icon" />
+          </span>
+          <span>PeerSync</span>
+        </div>
+        <h2>Checking your session</h2>
+        <p className="portal-copy">Connecting to Firebase Authentication.</p>
       </section>
     );
   }
@@ -95,19 +128,20 @@ export function AuthPanel({
   if (authUser && !needsName) {
     return (
       <section className={`auth-card${compact ? " compact" : ""}`}>
-        <div className="section-kicker">Signed In</div>
-        <h3>{authUser.displayName}</h3>
-        <p className="muted-copy">{authUser.email}</p>
-        <div className="auth-actions">
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => signOut(auth)}
-          >
-            Sign Out
+        <div className="portal-brand">
+          <span className="portal-brand-mark">
+            <Waypoints className="portal-brand-icon" />
+          </span>
+          <span>PeerSync</span>
+        </div>
+        <h2>{authUser.displayName}</h2>
+        <p className="portal-copy">{authUser.email}</p>
+        <div className="portal-action-row">
+          <button className="ghost-button" type="button" onClick={() => signOut(auth)}>
+            Sign out
           </button>
           {onAuthenticated ? (
-            <button className="primary-button" type="button" onClick={onAuthenticated}>
+            <button className="gradient-button" type="button" onClick={onAuthenticated}>
               Continue
             </button>
           ) : null}
@@ -118,78 +152,84 @@ export function AuthPanel({
 
   return (
     <section className={`auth-card${compact ? " compact" : ""}`}>
-      <div className="section-kicker">Authentication</div>
-      <h3>{needsName ? "Choose your username" : title}</h3>
-      <p className="muted-copy">
-        {needsName ? "This name will appear in live collaboration." : subtitle}
+      <div className="portal-brand">
+        <span className="portal-brand-mark">
+          <Waypoints className="portal-brand-icon" />
+        </span>
+        <span>PeerSync</span>
+      </div>
+
+      {!needsName ? (
+        <div className="portal-tabs">
+          <button
+            className={`portal-tab${mode === "login" ? " active" : ""}`}
+            type="button"
+            onClick={() => setMode("login")}
+          >
+            Sign in
+          </button>
+          <button
+            className={`portal-tab${mode === "register" ? " active" : ""}`}
+            type="button"
+            onClick={() => setMode("register")}
+          >
+            Sign up
+          </button>
+        </div>
+      ) : null}
+
+      <h2>{needsName ? "Choose your username" : title}</h2>
+      <p className="portal-copy">
+        {needsName ? "This name will appear in the live collaborator list." : subtitle}
       </p>
 
-      <form className="auth-form" onSubmit={handleSubmit}>
-        {mode === "register" || needsName ? (
-          <label className="field">
-            <span>Username</span>
-            <input
-              className="text-input"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="Enter your display name"
+      <form className="portal-form" onSubmit={handleSubmit}>
+        {(mode === "register" || needsName) && (
+          <Field
+            icon={User}
+            label="Username"
+            value={username}
+            onChange={setUsername}
+            placeholder="aanya"
+            required
+          />
+        )}
+
+        {!needsName && (
+          <>
+            <Field
+              icon={Mail}
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
               required
             />
-          </label>
-        ) : null}
-
-        {!needsName ? (
-          <>
-            <label className="field">
-              <span>Email</span>
-              <input
-                className="text-input"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@example.com"
-                required
-              />
-            </label>
-
-            <label className="field">
-              <span>Password</span>
-              <input
-                className="text-input"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Minimum 6 characters"
-                required
-              />
-            </label>
+            <Field
+              icon={Lock}
+              label="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              placeholder="••••••••"
+              required
+            />
           </>
-        ) : null}
+        )}
 
-        {error ? <p className="error-copy">{error}</p> : null}
+        {error ? <p className="portal-error">{error}</p> : null}
 
-        <button className="primary-button full-width" type="submit" disabled={busy}>
+        <button className="gradient-button full-width" type="submit" disabled={busy}>
           {busy
             ? "Please wait..."
             : needsName
-              ? "Save Username"
+              ? "Save username"
               : mode === "register"
-                ? "Create Account"
-                : "Sign In"}
+                ? "Create account"
+                : "Sign in"}
         </button>
       </form>
-
-      {!needsName ? (
-        <button
-          className="link-button"
-          type="button"
-          onClick={() => setMode(mode === "register" ? "login" : "register")}
-        >
-          {mode === "register"
-            ? "Already have an account? Sign in"
-            : "Need an account? Create one"}
-        </button>
-      ) : null}
     </section>
   );
 }
