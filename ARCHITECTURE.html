@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PeerSync Architecture</title>
+    <title>PeerSync Landing Page</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -235,8 +235,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); font
 <!-- HERO -->
 <div class="hero">
   <div class="hero-logo">P·S</div>
-  <h1>PeerSync <span>Architecture</span></h1>
-  <p>Distributed peer-to-peer collaborative editing — no central server, no single point of failure.</p>
+  <h1>PeerSync <span>Landing</span></h1>
+  <p>Sign in, launch a room, and review the full project architecture from one landing page.</p>
   <div class="badges">
     <span class="badge b-blue">● WebRTC / PeerJS</span>
     <span class="badge b-green">● RGA CRDT</span>
@@ -247,6 +247,36 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); font
 </div>
 
 <div class="page">
+
+<div class="section">
+  <div class="section-label">Access Portal</div>
+  <h2>Sign In And Enter A Room</h2>
+  <p>This landing page is the front door of the project. Open the workspace to sign in with Firebase Authentication, choose a username, and create or join a collaborative room.</p>
+
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box highlight2">
+        <span class="arch-box-label">Step 1</span>
+        <h3>Open the workspace</h3>
+        <p>Use the editor entry to access the Firebase sign-in portal.</p>
+        <code>/app.html</code>
+      </div>
+      <div class="arch-box highlight3">
+        <span class="arch-box-label">Step 2</span>
+        <h3>Sign in and set username</h3>
+        <p>Create an account or sign in, then save the username that appears in the collaborator list.</p>
+      </div>
+      <div class="arch-box highlight">
+        <span class="arch-box-label">Step 3</span>
+        <h3>Create or join room</h3>
+        <p>Use a room code or shareable room link to enter the same collaborative document.</p>
+      </div>
+    </div>
+    <div class="arch-arrow" style="margin-top:16px">
+      <a href="/app.html" style="color:#5b9cf6;text-decoration:none;border:1px solid rgba(91,156,246,.3);background:rgba(91,156,246,.08);padding:10px 16px;border-radius:8px;font-family:var(--font);font-size:14px">Open Sign In Portal</a>
+    </div>
+  </div>
+</div>
 
 <!-- SYSTEM ARCHITECTURE -->
 <div class="section">

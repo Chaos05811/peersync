@@ -116,13 +116,34 @@ app.get("/api/health", (_req, res) => {
 });
 
 if (fs.existsSync(distPath)) {
+  app.get("/", (_req, res) => {
+    res.sendFile(path.join(distPath, "ARCHITECTURE.html"));
+  });
+  app.get("/app", (_req, res) => {
+    res.sendFile(path.join(distPath, "app.html"));
+  });
+  app.get("/room/:roomId", (req, res) => {
+    const roomId = encodeURIComponent(req.params.roomId || "");
+    res.redirect(`/app.html?room=${roomId}`);
+  });
   app.use(express.static(distPath));
   app.get("*", (req, res, next) => {
     if (req.path.startsWith("/api")) {
       next();
       return;
     }
-    res.sendFile(path.join(distPath, "index.html"));
+
+    if (req.path === "/ARCHITECTURE.html") {
+      res.sendFile(path.join(distPath, "ARCHITECTURE.html"));
+      return;
+    }
+
+    if (req.path === "/app.html") {
+      res.sendFile(path.join(distPath, "app.html"));
+      return;
+    }
+
+    res.sendFile(path.join(distPath, "ARCHITECTURE.html"));
   });
 }
 
